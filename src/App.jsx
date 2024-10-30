@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import BookingPage from './pages/BookingPage';
+import BookingList from './components/BookingList';
 
 function App() {
   return (
