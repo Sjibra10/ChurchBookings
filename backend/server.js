@@ -8,24 +8,37 @@ const PORT = 5000;
 app.use(cors());
 app.use(express.json());
 
-// Initialize SQLite Database
-const db = new sqlite3.Database(':memory:');
+// Initialize SQLite Database (Persistent Storage)
+const db = new sqlite3.Database('./bookings.db');  // Uses a local file instead of in-memory
 db.serialize(() => {
-  db.run('CREATE TABLE bookings (id INTEGER PRIMARY KEY, name TEXT, date TEXT, time TEXT)');
+  db.run(
+    'CREATE TABLE IF NOT EXISTS bookings (id INTEGER PRIMARY KEY, name TEXT, date TEXT, time TEXT)'
+  );
 });
 
 // Routes
 app.post('/bookings', (req, res) => {
   const { name, date, time } = req.body;
-  db.run('INSERT INTO bookings (name, date, time) VALUES (?, ?, ?)', [name, date, time], (err) => {
-    if (err) return res.status(500).send(err.message);
+  console.log('New booking:', { name, date, time });
+
+  db.run('INSERT INTO bookings (name, date, time) VALUES (?, ?, ?)', 
+  [name, date, time], 
+  (err) => {
+    if (err) {
+      console.error('Error inserting booking:', err.message);
+      return res.status(500).send(err.message);
+    }
     res.status(201).send('Booking created');
   });
 });
 
 app.get('/bookings', (req, res) => {
   db.all('SELECT * FROM bookings', [], (err, rows) => {
-    if (err) return res.status(500).send(err.message);
+    if (err) {
+      console.error('Error fetching bookings:', err.message);
+      return res.status(500).send(err.message);
+    }
+    console.log('Fetched bookings:', rows);
     res.json(rows);
   });
 });

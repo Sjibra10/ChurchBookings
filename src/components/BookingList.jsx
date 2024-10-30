@@ -1,23 +1,6 @@
-import { useEffect, useState } from 'react';
 import { Container, Typography, List, ListItem, ListItemText, Divider } from '@mui/material';
-import axios from 'axios';
 
-const BookingList = () => {
-  const [bookings, setBookings] = useState([]);
-
-  useEffect(() => {
-    const fetchBookings = async () => {
-      try {
-        const response = await axios.get('http://localhost:5000/bookings');
-        setBookings(response.data);
-      } catch (error) {
-        console.error('Error fetching bookings:', error);
-      }
-    };
-
-    fetchBookings();
-  }, []);
-
+const BookingList = ({ bookings }) => { // Accept bookings as a prop
   return (
     <Container style={{ marginTop: '50px' }}>
       <Typography variant="h5" gutterBottom>
