@@ -1,47 +1,44 @@
 const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const cors = require('cors');
+const bodyParser = require('body-parser');
+
 const app = express();
-const PORT = 5000;
+const db = new sqlite3.Database(':memory:'); // Change to a file path for persistent storage
 
-// Middleware
 app.use(cors());
-app.use(express.json());
+app.use(bodyParser.json());
 
-// Initialize SQLite Database (Persistent Storage)
-const db = new sqlite3.Database('./bookings.db');  // Uses a local file instead of in-memory
+// Initialize the database
 db.serialize(() => {
-  db.run(
-    'CREATE TABLE IF NOT EXISTS bookings (id INTEGER PRIMARY KEY, name TEXT, date TEXT, time TEXT)'
-  );
+  db.run('CREATE TABLE bookings (id INTEGER PRIMARY KEY, name TEXT, date TEXT, time TEXT, reason TEXT)');
 });
 
-// Routes
-app.post('/bookings', (req, res) => {
-  const { name, date, time } = req.body;
-  console.log('New booking:', { name, date, time });
-
-  db.run('INSERT INTO bookings (name, date, time) VALUES (?, ?, ?)', 
-  [name, date, time], 
-  (err) => {
-    if (err) {
-      console.error('Error inserting booking:', err.message);
-      return res.status(500).send(err.message);
-    }
-    res.status(201).send('Booking created');
-  });
-});
-
+// Endpoint to get all bookings
 app.get('/bookings', (req, res) => {
   db.all('SELECT * FROM bookings', [], (err, rows) => {
     if (err) {
-      console.error('Error fetching bookings:', err.message);
-      return res.status(500).send(err.message);
+      res.status(500).send(err.message);
+      return;
     }
-    console.log('Fetched bookings:', rows);
     res.json(rows);
   });
 });
 
-// Start Server
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+// Endpoint to create a booking
+app.post('/bookings', (req, res) => {
+  const { name, date, time, reason } = req.body; // Destructure reason
+  db.run('INSERT INTO bookings (name, date, time, reason) VALUES (?, ?, ?, ?)', [name, date, time, reason], function(err) {
+    if (err) {
+      res.status(500).send(err.message);
+      return;
+    }
+    res.status(201).send({ id: this.lastID }); // Send back the new booking's ID
+  });
+});
+
+// Start the server
+const PORT = 5000;
+app.listen(PORT, () => {
+  console.log(`Server is running on http://localhost:${PORT}`);
+});

@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { TextField, Button, Container, Typography } from '@mui/material';
+import { useState } from 'react';
+import { TextField, Button, Container, Typography, MenuItem, Select, FormControl, InputLabel } from '@mui/material';
 import BookingList from '../components/BookingList';
 import axios from 'axios';
 
@@ -7,35 +7,24 @@ const BookingPage = () => {
   const [name, setName] = useState('');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
-  const [bookings, setBookings] = useState([]); // State for bookings
+  const [reason, setReason] = useState('');
+  const [customReason, setCustomReason] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const bookingReason = reason === 'Other' ? customReason : reason; // Use custom reason if "Other" is selected
     try {
-      await axios.post('http://localhost:5000/bookings', { name, date, time });
+      await axios.post('http://localhost:5000/bookings', { name, date, time, reason: bookingReason });
       alert('Booking Successful!');
       setName('');
       setDate('');
       setTime('');
-      fetchBookings(); // Fetch updated bookings
+      setReason('');
+      setCustomReason('');
     } catch (error) {
       console.error('Error booking appointment:', error);
     }
   };
-
-  const fetchBookings = async () => {
-    try {
-      const response = await axios.get('http://localhost:5000/bookings');
-      setBookings(response.data);
-    } catch (error) {
-      console.error('Error fetching bookings:', error);
-    }
-  };
-
-  // Fetch bookings when the component mounts
-  useEffect(() => {
-    fetchBookings();
-  }, []);
 
   return (
     <Container sx={{ marginTop: '50px' }}>
@@ -55,6 +44,7 @@ const BookingPage = () => {
           type="date"
           fullWidth
           margin="normal"
+          slotProps={{ inputLabel: { shrink: true } }}
           value={date}
           onChange={(e) => setDate(e.target.value)}
         />
@@ -63,9 +53,38 @@ const BookingPage = () => {
           type="time"
           fullWidth
           margin="normal"
+          slotProps={{ inputLabel: { shrink: true } }}
           value={time}
           onChange={(e) => setTime(e.target.value)}
         />
+        <FormControl fullWidth margin="normal">
+          <InputLabel id="reason-label">Reason for Appointment</InputLabel>
+          <Select
+            labelId="reason-label"
+            value={reason}
+            onChange={(e) => {
+              setReason(e.target.value);
+              if (e.target.value !== 'Other') {
+                setCustomReason(''); // Clear custom reason when not "Other"
+              }
+            }}
+          >
+            <MenuItem value="">Select Reason</MenuItem>
+            <MenuItem value="Consultation">Consultation</MenuItem>
+            <MenuItem value="Visit Sick">Visit Sick</MenuItem>
+            <MenuItem value="Personal">Personal</MenuItem>
+            <MenuItem value="Other">Other</MenuItem>
+          </Select>
+        </FormControl>
+        {reason === 'Other' && (
+          <TextField
+            label="Please specify"
+            fullWidth
+            margin="normal"
+            value={customReason}
+            onChange={(e) => setCustomReason(e.target.value)}
+          />
+        )}
         <Button
           variant="contained"
           color="primary"
@@ -75,7 +94,7 @@ const BookingPage = () => {
           Submit
         </Button>
       </form>
-      <BookingList bookings={bookings} /> {/* Pass bookings as a prop */}
+      <BookingList />
     </Container>
   );
 };
